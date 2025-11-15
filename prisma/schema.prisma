@@ -1,0 +1,218 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  RECRUITER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING
+  REJECTED
+}
+
+enum AuthProvider {
+  PASSWORD
+  GOOGLE
+  BOTH
+}
+
+enum ExperienceType {
+  INTERNSHIP
+  FULL_TIME
+  PART_TIME
+  FREELANCE
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TokenPurpose {
+  SIGNUP_VERIFICATION
+}
+
+model College {
+  id                       Int                       @id @default(autoincrement())
+  name                     String
+  emailDomain              String                    @unique
+  isActive                 Boolean                   @default(true)
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+
+  users                    User[]
+  studentAcademics         StudentAcademic[]
+  messages                 Message[]
+  recruiterCollegeRequests RecruiterCollegeRequest[]
+}
+
+model User {
+  id                        Int                       @id @default(autoincrement())
+  collegeId                 Int?
+  college                   College?                  @relation(fields: [collegeId], references: [id])
+
+  name                      String
+  email                     String                    @unique
+  passwordHash              String?
+  role                      Role
+  status                    UserStatus                @default(ACTIVE)
+  authProvider              AuthProvider              @default(PASSWORD)
+  emailVerifiedAt           DateTime?
+  profileImageUrl           String?
+
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+
+  // relations
+  studentProfile            StudentProfile?
+  sentMessages              Message[]                 @relation("SentMessages")
+  receivedMessages          Message[]                 @relation("ReceivedMessages")
+  recruiterRequests         RecruiterCollegeRequest[] @relation("RecruiterRequests")
+  resolvedRequests          RecruiterCollegeRequest[] @relation("ResolvedByAdmin")
+  emailVerificationTokens   EmailVerificationToken[]
+}
+
+model StudentAcademic {
+  id             Int        @id @default(autoincrement())
+  collegeId      Int
+  college        College    @relation(fields: [collegeId], references: [id])
+
+  rollNumber     String
+  studentName    String?
+  currentCgpa    Decimal?   @db.Decimal(4, 2)
+  overallSgpa    Decimal?   @db.Decimal(4, 2)
+  batchYear      Int?
+  branch         String?
+  semesters      Json?
+  lastScrapedAt  DateTime   @default(now())
+  rawPayload     Json?
+
+  studentProfile StudentProfile?
+
+  @@unique([collegeId, rollNumber])
+}
+
+model StudentProfile {
+  id                Int             @id @default(autoincrement())
+  userId            Int             @unique
+  user              User            @relation(fields: [userId], references: [id])
+
+  academicId        Int             @unique
+  academic          StudentAcademic @relation(fields: [academicId], references: [id])
+
+  headline          String?
+  about             String?
+  yearOfStudy       Int?
+  ussScore          Decimal?        @db.Decimal(6, 2)
+  profileCompleted  Boolean         @default(false)
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  skills            StudentSkill[]
+  experiences       StudentExperience[]
+  certifications    StudentCertification[]
+}
+
+model StudentSkill {
+  id                Int            @id @default(autoincrement())
+  studentProfileId  Int
+  studentProfile    StudentProfile @relation(fields: [studentProfileId], references: [id])
+
+  category          String         // e.g. 'Programming', 'Framework'
+  name              String         // e.g. 'React', 'Go'
+
+  createdAt         DateTime       @default(now())
+
+  @@unique([studentProfileId, category, name])
+}
+
+model StudentExperience {
+  id                Int             @id @default(autoincrement())
+  studentProfileId  Int
+  studentProfile    StudentProfile  @relation(fields: [studentProfileId], references: [id])
+
+  type              ExperienceType
+  companyName       String
+  roleTitle         String
+  startDate         DateTime        @db.Date
+  endDate           DateTime?       @db.Date
+  isCurrent         Boolean         @default(false)
+  description       String?
+
+  createdAt         DateTime        @default(now())
+}
+
+model StudentCertification {
+  id                Int             @id @default(autoincrement())
+  studentProfileId  Int
+  studentProfile    StudentProfile  @relation(fields: [studentProfileId], references: [id])
+
+  name              String
+  issuer            String?
+  issueDate         DateTime?       @db.Date
+  expiryDate        DateTime?       @db.Date
+  credentialUrl     String?
+
+  createdAt         DateTime        @default(now())
+}
+
+model RecruiterCollegeRequest {
+  id                Int            @id @default(autoincrement())
+
+  recruiterId       Int
+  recruiter         User           @relation("RecruiterRequests", fields: [recruiterId], references: [id])
+
+  targetCollegeId   Int
+  targetCollege     College        @relation(fields: [targetCollegeId], references: [id])
+
+  status            RequestStatus  @default(PENDING)
+  reason            String?
+
+  createdAt         DateTime       @default(now())
+  resolvedAt        DateTime?
+  resolvedByAdminId Int?
+  resolvedByAdmin   User?          @relation("ResolvedByAdmin", fields: [resolvedByAdminId], references: [id])
+}
+
+model Message {
+  id          Int      @id @default(autoincrement())
+
+  collegeId   Int
+  college     College  @relation(fields: [collegeId], references: [id])
+
+  senderId    Int
+  receiverId  Int
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  body        String
+  createdAt   DateTime @default(now())
+  readAt      DateTime?
+}
+
+model EmailVerificationToken {
+  id          Int          @id @default(autoincrement())
+  userId      Int
+  user        User         @relation(fields: [userId], references: [id])
+
+  token       String
+  purpose     TokenPurpose
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime     @default(now())
+
+  @@unique([userId, purpose, token])
+}
