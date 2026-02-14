@@ -2,27 +2,71 @@
   "name": "campus-link",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20 <25"
+  },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "db:up": "sh -c 'docker-compose up -d db || docker compose up -d db'",
+    "db:down": "sh -c 'docker-compose down || docker compose down'",
+    "db:migrate": "prisma migrate dev",
+    "import:results": "node --experimental-strip-types scripts/import-results-jsonl.ts",
+    "cleanup:results": "node --experimental-strip-types scripts/cleanup-import-duplicates.ts",
+    "verify:app": "node --experimental-strip-types scripts/verify-app.ts",
+    "test:api-smoke": "node --experimental-strip-types scripts/verify-app.ts",
+    "test:e2e-smoke": "node --experimental-strip-types scripts/verify-app.ts",
+    "audit:prod": "npm audit --omit=dev",
+    "verify:google-oauth": "node --experimental-strip-types scripts/verify-google-oauth.ts",
+    "ops:bootstrap-verify": "bash scripts/bootstrap-import-and-verify.sh",
+    "admin:create": "node --experimental-strip-types scripts/create-admin.ts"
   },
   "dependencies": {
+    "@next-auth/prisma-adapter": "^1.0.7",
     "@prisma/client": "^6.19.0",
-    "next": "16.0.3",
+    "@radix-ui/react-avatar": "^1.1.11",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@sentry/nextjs": "^10.38.0",
+    "bcryptjs": "^2.4.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.2.3",
+    "framer-motion": "^12.23.24",
+    "lucide-react": "^0.554.0",
+    "next": "^16.1.6",
+    "next-auth": "^4.24.13",
+    "nodemailer": "^7.0.10",
+    "preact": "^10.27.3",
     "prisma": "^6.19.0",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "recharts": "^3.4.1",
+    "tailwind-merge": "^3.4.0",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.2",
     "@types/node": "^20",
+    "@types/nodemailer": "^6.4.17",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "baseline-browser-mapping": "^2.9.19",
     "eslint": "^9",
-    "eslint-config-next": "16.0.3",
+    "eslint-config-next": "^16.1.6",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
+  },
+  "optionalDependencies": {
+    "@next/swc-darwin-arm64": "^16.1.6"
   }
 }

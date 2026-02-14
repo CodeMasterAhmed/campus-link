@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: student_activity
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d student_activity"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/student_activity
+      NEXTAUTH_URL: http://127.0.0.1:3001
+      NEXTAUTH_SECRET: test-nextauth-secret-should-be-very-long
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: "587"
+      SMTP_SECURE: "false"
+      SMTP_USER: noreply@example.com
+      SMTP_PASS: dummy-password
+      SMTP_FROM: noreply@example.com
+      ENABLE_AI_ASSISTANT: "false"
+      ENABLE_SENTRY: "false"
+      APP_BASE_URL: http://127.0.0.1:3001
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Prisma migrate
+        run: npx prisma migrate deploy
+
+      - name: Prisma seed
+        run: npx prisma db seed
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Production audit
+        run: npm run audit:prod
+
+      - name: Start app
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3001 &
+          for i in {1..60}; do
+            curl -fsS http://127.0.0.1:3001/api/health >/dev/null && break
+            sleep 1
+          done
+
+      - name: API smoke
+        run: npm run test:api-smoke
+
+      - name: UI smoke
+        run: npm run test:e2e-smoke
