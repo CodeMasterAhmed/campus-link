@@ -1,0 +1,40 @@
+export const API_REASONS = {
+  OK: "OK",
+  INVALID_PAYLOAD: "INVALID_PAYLOAD",
+  UNAUTHORIZED: "UNAUTHORIZED",
+  FORBIDDEN: "FORBIDDEN",
+  NOT_FOUND: "NOT_FOUND",
+  CONFLICT: "CONFLICT",
+  RATE_LIMITED: "RATE_LIMITED",
+  CSRF_ORIGIN_MISMATCH: "CSRF_ORIGIN_MISMATCH",
+  INVALID_CREDENTIALS: "INVALID_CREDENTIALS",
+  EMAIL_NOT_VERIFIED: "EMAIL_NOT_VERIFIED",
+  PENDING_APPROVAL: "PENDING_APPROVAL",
+  INACTIVE_ACCOUNT: "INACTIVE_ACCOUNT",
+  USER_NOT_FOUND: "USER_NOT_FOUND",
+  TOKEN_INVALID: "TOKEN_INVALID",
+  TOKEN_EXPIRED: "TOKEN_EXPIRED",
+  TOKEN_ALREADY_USED: "TOKEN_ALREADY_USED",
+  RESOLUTION_FAILED: "RESOLUTION_FAILED",
+  CONTEXT_FORBIDDEN: "CONTEXT_FORBIDDEN",
+  AI_NOT_CONFIGURED: "AI_NOT_CONFIGURED",
+  PROVIDER_ERROR: "PROVIDER_ERROR",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+} as const;
+
+export type ApiReason = (typeof API_REASONS)[keyof typeof API_REASONS];
+
+export type ApiSuccess<T extends Record<string, unknown> = Record<string, never>> = {
+  ok: true;
+  requestId: string;
+  success?: true;
+} & T;
+
+export type ApiFailure = {
+  ok: false;
+  requestId: string;
+  reason: ApiReason;
+  error: string;
+  success?: false;
+  details?: unknown;
+};

@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -44,9 +42,21 @@ enum TokenPurpose {
   SIGNUP_VERIFICATION
 }
 
+enum AIContextType {
+  STUDENT_SELF
+  STUDENT_PROFILE
+}
+
+enum AIMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
 model College {
   id                       Int                       @id @default(autoincrement())
   name                     String
+  code                     String                    @unique
   emailDomain              String                    @unique
   isActive                 Boolean                   @default(true)
   createdAt                DateTime                  @default(now())
@@ -77,11 +87,14 @@ model User {
 
   // relations
   studentProfile            StudentProfile?
+  recruiterProfile          RecruiterProfile?
   sentMessages              Message[]                 @relation("SentMessages")
   receivedMessages          Message[]                 @relation("ReceivedMessages")
   recruiterRequests         RecruiterCollegeRequest[] @relation("RecruiterRequests")
   resolvedRequests          RecruiterCollegeRequest[] @relation("ResolvedByAdmin")
   emailVerificationTokens   EmailVerificationToken[]
+  aiConversations           AIConversation[]
+  recruiterWatchlist        RecruiterWatchlist[]
 }
 
 model StudentAcademic {
@@ -100,6 +113,8 @@ model StudentAcademic {
   rawPayload     Json?
 
   studentProfile StudentProfile?
+  studentResults StudentResult[]
+  recruiterWatchlist RecruiterWatchlist[]
 
   @@unique([collegeId, rollNumber])
 }
@@ -124,6 +139,18 @@ model StudentProfile {
   skills            StudentSkill[]
   experiences       StudentExperience[]
   certifications    StudentCertification[]
+}
+
+model RecruiterProfile {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName   String?
+  companyWebsite String?
+  companyAbout  String?
+  hiringFocus   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model StudentSkill {
@@ -208,11 +235,144 @@ model EmailVerificationToken {
   userId      Int
   user        User         @relation(fields: [userId], references: [id])
 
-  token       String
+  tokenHash   String
+  token       String?
   purpose     TokenPurpose
   expiresAt   DateTime
   consumedAt  DateTime?
   createdAt   DateTime     @default(now())
 
-  @@unique([userId, purpose, token])
+  @@unique([userId, purpose, tokenHash])
+  @@index([userId, purpose, consumedAt, expiresAt])
+}
+
+model ResultLink {
+  id            Int      @id @default(autoincrement())
+  url           String   @unique
+  title         String
+  publishedDate DateTime?
+  isProcessed   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  exams         Exam[]
+}
+
+enum ExamType {
+  MAIN
+  BACKLOG
+  REVAL
+  SUPPLEMENTARY
+}
+
+model Exam {
+  id           Int          @id @default(autoincrement())
+  name         String
+  monthYear    String?
+  semester     Int?
+  type         ExamType     @default(MAIN)
+  
+  resultLinkId Int
+  resultLink   ResultLink   @relation(fields: [resultLinkId], references: [id])
+  
+  studentResults StudentResult[]
+  
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+enum ResultStatus {
+  PASSED
+  FAILED
+  PROMOTED
+  DETAINED
+  MALPRACTICE
+  ABSENT
+}
+
+model StudentResult {
+  id                Int             @id @default(autoincrement())
+  rollNumber        String
+  
+  examId            Int
+  exam              Exam            @relation(fields: [examId], references: [id])
+  
+  sgpa              Decimal?        @db.Decimal(4, 2)
+  backlogCount      Int?
+  resultStatus      ResultStatus
+  
+  studentAcademicId Int?
+  studentAcademic   StudentAcademic? @relation(fields: [studentAcademicId], references: [id])
+  
+  subjectResults    SubjectResult[]
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@unique([rollNumber, examId])
+}
+
+model SubjectResult {
+  id              Int           @id @default(autoincrement())
+  studentResultId Int
+  studentResult   StudentResult @relation(fields: [studentResultId], references: [id])
+  
+  subjectCode     String
+  subjectName     String
+  grade           String?
+  credits         Decimal?      @db.Decimal(3, 1)
+  resultStatus    ResultStatus
+  
+  createdAt       DateTime      @default(now())
+}
+
+model AIConversation {
+  id                Int           @id @default(autoincrement())
+  userId            Int
+  user              User          @relation(fields: [userId], references: [id])
+  title             String
+  contextType       AIContextType
+  contextRollNumber String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  messages          AIMessage[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+}
+
+model AIMessage {
+  id             Int            @id @default(autoincrement())
+  conversationId Int
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           AIMessageRole
+  content        String
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model RecruiterWatchlist {
+  id                Int             @id @default(autoincrement())
+  recruiterId       Int
+  recruiter         User            @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+  studentAcademicId Int
+  studentAcademic   StudentAcademic @relation(fields: [studentAcademicId], references: [id], onDelete: Cascade)
+  note              String?
+  tagsJson          Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([recruiterId, studentAcademicId])
+  @@index([recruiterId, createdAt(sort: Desc)])
+}
+
+model ApiRateLimitEvent {
+  id        Int      @id @default(autoincrement())
+  identity  String
+  action    String
+  createdAt DateTime @default(now())
+
+  @@index([identity, action, createdAt])
+  @@index([createdAt])
 }
