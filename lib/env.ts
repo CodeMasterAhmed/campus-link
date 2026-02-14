@@ -13,7 +13,7 @@ const booleanLike = z
 const baseSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.string().trim().min(1),
-  NEXTAUTH_URL: z.string().trim().min(1),
+  NEXTAUTH_URL: z.string().trim().optional(),
   NEXTAUTH_SECRET: z.string().trim().min(8),
 
   SMTP_HOST: z.string().trim().min(1),
@@ -58,6 +58,12 @@ export function getEnv(): AppEnv {
 
   const env = parsed.data;
   const missing: string[] = [];
+  const vercelUrl = process.env.VERCEL_URL?.trim();
+  const hasNextAuthUrl = Boolean(env.NEXTAUTH_URL?.trim()) || Boolean(vercelUrl);
+
+  if (!hasNextAuthUrl) {
+    missing.push("NEXTAUTH_URL (or VERCEL_URL on Vercel)");
+  }
 
   if (env.ENABLE_SENTRY) {
     pushMissing(missing, "SENTRY_DSN", env.SENTRY_DSN);

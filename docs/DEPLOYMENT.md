@@ -4,7 +4,7 @@
 
 - Core:
   - `DATABASE_URL`
-  - `NEXTAUTH_URL`
+  - `NEXTAUTH_URL` (or Vercel-provided `VERCEL_URL`)
   - `NEXTAUTH_SECRET`
 - SMTP / OTP:
   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
@@ -20,9 +20,11 @@
 
 1. Connect repository to Vercel.
 2. Configure all environment variables in Vercel project settings.
-3. Set `NEXTAUTH_URL` to your production domain.
+3. For auth base URL, use one of:
+   - Set `NEXTAUTH_URL` to your production domain, or
+   - Leave `NEXTAUTH_URL` unset and rely on Vercel's `VERCEL_URL`.
 4. Update Google OAuth redirect URI to:
-   - `https://<your-domain>/api/auth/callback/google`
+   - `https://<your-domain>/api/auth/callback/google` (must exactly match your active domain)
 
 ## 3. Database migration flow
 

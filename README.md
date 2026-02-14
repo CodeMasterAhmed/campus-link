@@ -66,6 +66,7 @@ npm run verify:app
 
 - Google OAuth redirect URI must match exactly:
   - `<NEXTAUTH_URL>/api/auth/callback/google`
+- On Vercel, `NEXTAUTH_URL` can be your custom domain or the default `https://<project>.vercel.app`.
 - OTP email uses SMTP vars from `.env`.
 
 ## Deployment
