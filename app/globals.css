@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f1ea;
+  --foreground: #1c1b19;
+  --primary: #1d4ed8;
+  --secondary: #f97316;
+  --accent: #0f766e;
+  --surface: #ffffff;
+  --muted: #6b6a65;
+  --border: #e4ded6;
+  --surface-muted: #f1ebe3;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-fraunces);
+  --font-mono: var(--font-jetbrains);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --animate-float: float 6s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-16px); }
   }
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(1200px circle at 10% -10%, rgba(29, 78, 216, 0.12), transparent 40%),
+    radial-gradient(900px circle at 90% 10%, rgba(249, 115, 22, 0.12), transparent 45%),
+    linear-gradient(180deg, #f6f1ea 0%, #f4eee7 45%, #f6f1ea 100%);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+}
+
+.text-gradient {
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.paper-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  box-shadow: 0 18px 40px rgba(28, 27, 25, 0.08);
 }
